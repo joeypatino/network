@@ -1,0 +1,16 @@
+PODS:
+  - Disk (0.6.4)
+
+DEPENDENCIES:
+  - Disk
+
+SPEC REPOS:
+  trunk:
+    - Disk
+
+SPEC CHECKSUMS:
+  Disk: dcee5c2e98fb72f9a924cde8da8435b08244a80e
+
+PODFILE CHECKSUM: 0bb63d58dc0769bb6da90dd2aaf96bd095be2516
+
+COCOAPODS: 1.10.1
