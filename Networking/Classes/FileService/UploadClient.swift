@@ -1,4 +1,4 @@
-public protocol UploadClientObservers: class {
+public protocol UploadClientObservers: AnyObject {
     func uploadClient(_ uploadClient: UploadClient, didStart upload: Upload)
     func uploadClient(_ uploadClient: UploadClient, didComplete upload: Upload)
     func uploadClient(_ uploadClient: UploadClient, didFail upload: Upload, error: NetworkError)

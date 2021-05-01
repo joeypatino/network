@@ -1,6 +1,7 @@
 public protocol DataTaskProtocol: AnyObject {
     var delegate: DataTaskProtocolDelegate? { get set }
     var request: RequestProtocol { get }
+    var urlSession: URLSession { get }
     var progress: Progress { get }
     func load()
 }

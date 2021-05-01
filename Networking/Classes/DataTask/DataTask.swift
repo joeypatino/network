@@ -1,10 +1,16 @@
+public protocol DataTaskDelegate: AnyObject {
+    func dataTask(_ dataTask: DataTask, didUpdateUrlTask urlTask: URLSessionTask, previousTaskIdentifier: Int)
+}
+
 /// `DataTask` is a class that loads data from the Network and provides status
 /// updates via it's delegate
 public class DataTask: NSObject, DataTaskProtocol {
+    public var taskDelegate: DataTaskDelegate?
     public var delegate: DataTaskProtocolDelegate?
     public var request: RequestProtocol
     public let urlSession: URLSession
-    public let urlTask: URLSessionTask
+    public var allTasks: [URLSessionTask] = []
+    public var urlTask: URLSessionTask { allTasks.last! }
     public var data = Data()
     public var progress: Progress { urlTask.progress }
     
@@ -13,27 +19,60 @@ public class DataTask: NSObject, DataTaskProtocol {
     ///   - request: The Request object that we want to load
     ///   - urlSession: The url session that will load this request
     public init(request: RequestProtocol, urlSession: URLSession) {
+        DataTask.Log.info(#function)
         self.request = request
         self.urlSession = urlSession
-                
+        super.init()
+        self.createUrlTask()
+    }
+    
+    private func createUrlTask() {
+        DataTask.Log.info(#function)
+        let urlTask: URLSessionTask
         if let data = request.method.body {
-            DataTask.Log.verbose(#function, "\n", String(decoding: data, as: UTF8.self))
             if let fileUrl = data.tempfileUrl {
-                self.urlTask = urlSession.uploadTask(with: request.urlRequest, fromFile: fileUrl)
+                urlTask = urlSession.uploadTask(with: request.urlRequest, fromFile: fileUrl)
             } else {
-                self.urlTask = urlSession.uploadTask(with: request.urlRequest, from: data)
+                urlTask = urlSession.uploadTask(with: request.urlRequest, from: data)
             }
         } else {
-            self.urlTask = urlSession.dataTask(with: request.urlRequest)
+            urlTask = urlSession.dataTask(with: request.urlRequest)
         }
-        super.init()
+        guard allTasks.count > 0 else { allTasks.append(urlTask); return }
+        
+        let oldUrlTask = self.urlTask
+        allTasks.append(urlTask)
+        taskDelegate?.dataTask(self, didUpdateUrlTask: self.urlTask, previousTaskIdentifier: oldUrlTask.taskIdentifier)
+        data = Data()
     }
     
     /// Loads the request associated for this data task
     public func load() {
+        DataTask.Log.info(#function)
+        printsState()
+        if case .completed = urlTask.state {
+            createUrlTask()
+        }
+        printsState()
+
         DispatchQueue.main.async {
             self.delegate?.dataTask(self, didStartLoading: self.request)
             self.urlTask.resume()
+        }
+    }
+    
+    private func printsState() {
+        switch urlTask.state {
+        case .running:
+            DataTask.Log.info("URLSessionTask:[\(self.urlTask.taskIdentifier)] running")
+        case .canceling:
+            DataTask.Log.info("URLSessionTask:[\(self.urlTask.taskIdentifier)] canceling")
+        case .suspended:
+            DataTask.Log.info("URLSessionTask:[\(self.urlTask.taskIdentifier)] suspended")
+        case .completed:
+            DataTask.Log.info("URLSessionTask:[\(self.urlTask.taskIdentifier)] completed")
+        @unknown default:
+            break
         }
     }
 }

@@ -30,6 +30,9 @@ public class ArrayDataSource<DataObject>: DataSource where DataObject: Codable {
     
     /// reloads the `DataSource`
     public func reload() {
+        if let request = request {
+            ArrayDataSource.Log.custom("NETWORK", #function, "->", request.method.name, request.url.pathWithQuery)
+        }
         dataTask?.load()
     }
 }
@@ -43,6 +46,7 @@ extension ArrayDataSource: Equatable {
 extension ArrayDataSource: DataTaskProtocolDelegate {
     public func dataTask(_ dataTask: DataTaskProtocol, requestDidSucceed request: RequestProtocol, withResponse response: ResponseProtocol) {
         let data = response.data
+        ArrayDataSource.Log.custom("NETWORK", #function, "\n", String(data: data ?? Data(), encoding: .utf8)!)
         do {
             guard (200..<300).contains(response.statusCode) else {
                 let error = NetworkError(statusCode: response.statusCode, data: data)
@@ -75,3 +79,7 @@ extension ArrayDataSource: DataTaskProtocolDelegate {
     }
 }
 
+extension ArrayDataSource: LoggingSupport {
+    public static var namespace: String { "ArrayDataSource" }
+    public static var verbosity: [Console.Verbosity] { [.custom("NETWORK")] }
+}

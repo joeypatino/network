@@ -45,7 +45,7 @@ public final class NetworkService: NSObject, NetworkServiceProtocol {
         let serviceRequest = HttpServiceRequest(request, baseUrl: baseUrl)
         let dataTask = DataTask(request: serviceRequest, urlSession: urlSession)
         taskIdentifierToDataTask[dataTask.urlTask.taskIdentifier] = dataTask
-        
+        dataTask.taskDelegate = self
         let dataSource: ObjectDataSource<DataObject> = ObjectDataSource(dataTask: dataTask)
         if immediate { dataSource.reload() }
         return dataSource
@@ -61,7 +61,6 @@ public final class NetworkService: NSObject, NetworkServiceProtocol {
         let serviceRequest = HttpServiceRequest(request, baseUrl: baseUrl)
         let dataTask = DataTask(request: serviceRequest, urlSession: urlSession)
         taskIdentifierToDataTask[dataTask.urlTask.taskIdentifier] = dataTask
-        
         let dataSource: ArrayDataSource<DataObject> = ArrayDataSource(dataTask: dataTask)
         if immediate { dataSource.reload() }
         return dataSource
@@ -83,7 +82,15 @@ public final class NetworkService: NSObject, NetworkServiceProtocol {
     }
     
     private func task(identifier: Int) -> DataTask? {
-        taskIdentifierToDataTask[identifier]
+        NetworkService.Log.info(#function, identifier)
+        return taskIdentifierToDataTask[identifier]
+    }
+}
+
+extension NetworkService: DataTaskDelegate {
+    public func dataTask(_ dataTask: DataTask, didUpdateUrlTask urlTask: URLSessionTask, previousTaskIdentifier: Int) {
+        //guard let task = taskIdentifierToDataTask[previousTaskIdentifier] else { return }
+        taskIdentifierToDataTask[urlTask.taskIdentifier] = dataTask
     }
 }
 
@@ -130,6 +137,10 @@ extension NetworkService: URLSessionTaskDelegate {
         self.task(identifier: task.taskIdentifier)?.urlSession(session, task: task, didCompleteWithError: error)
         taskIdentifierToDataTask.removeValue(forKey: task.taskIdentifier)
     }
+}
+
+extension NetworkService: LoggingSupport {
+    public static var verbosity: [Console.Verbosity] = []
 }
 
 fileprivate extension OperationQueue {

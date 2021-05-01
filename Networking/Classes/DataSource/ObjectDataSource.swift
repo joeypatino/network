@@ -8,34 +8,43 @@ public class ObjectDataSource<DataObject>: DataSource where DataObject: Codable 
     public var onDataLoaded: OnDataLoaded<DataObject> = { _ in }
     
     /// the request that this `DataSource` loads
-    public var request: RequestProtocol? { dataTask?.request }
+    public var request: RequestProtocol? { dataTask.request }
     
     /// the data object contained in this `DataSource`
     public var object: DataObject?
     
     /// the progress of the data loading operation
-    public var progress: Progress { dataTask?.progress ?? Progress() }
+    public var progress: Progress { dataTask.progress }
     
     /// the unique identifier for this datasource instance
     public var uuid: String
     
     /// the `DataTask` for the `DataSource`
-    private weak var dataTask: DataTaskProtocol?
+    private var dataTask: DataTaskProtocol
     
-    public init(dataTask: DataTaskProtocol?) {
+    private let session: URLSession
+
+    public init(dataTask: DataTaskProtocol) {
         self.uuid = UUID().uuidString
+        self.session = dataTask.urlSession
         self.dataTask = dataTask
-        self.dataTask?.delegate = self
+        self.dataTask.delegate = self
     }
     
     /// reloads the `DataSource`
     public func reload() {
-        dataTask?.load()
+        if let request = request {
+            ObjectDataSource.Log.custom("NETWORK",
+                                     #function, "->",
+                                     request.method.name,
+                                     request.url.pathWithQuery)
+        }
+        dataTask.load()
     }
 }
 
 extension ObjectDataSource: Equatable {
-    public static func ==(lhs: ObjectDataSource, rhs:ObjectDataSource) -> Bool {
+    public static func ==(lhs: ObjectDataSource, rhs: ObjectDataSource) -> Bool {
         return lhs.uuid == rhs.uuid
     }
 }
@@ -44,6 +53,7 @@ extension ObjectDataSource: DataTaskProtocolDelegate {
     public func dataTask(_ dataTask: DataTaskProtocol, requestDidSucceed request: RequestProtocol, withResponse response: ResponseProtocol) {
         // on empty responses, return the decoders "emptyRepresentation" so that decoding of a `DataObject` still succeeds
         let data = response.data?.count == 0 ? request.decoder.emptyRepresentation() : response.data
+        ObjectDataSource.Log.custom("NETWORK", #function, "\n", String(data: data ?? Data(), encoding: .utf8)!)
 
         do {
             guard (200..<300).contains(response.statusCode) else {
@@ -72,4 +82,9 @@ extension ObjectDataSource: DataTaskProtocolDelegate {
         observers.forEach { $0.dataSource(self, didEncounterError: error) }
         onDataLoaded(.failure(error))
     }
+}
+
+extension ObjectDataSource: LoggingSupport {
+    public static var namespace: String { "ObjectDataSource" }
+    public static var verbosity: [Console.Verbosity] { [.info, .custom("NETWORK")] }
 }
