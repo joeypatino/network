@@ -1,4 +1,4 @@
-public protocol DataTaskOperationDelegate: class {
+public protocol DataTaskOperationDelegate: AnyObject {
     func dataTask(_ task: DataTaskOperation, willStartLoading urlRequest: inout URLRequest, forRequest request: RequestProtocol)
     func dataTask(_ task: DataTaskOperation, didStartLoading request: RequestProtocol)
     func dataTask(_ task: DataTaskOperation, didFinishLoading request: RequestProtocol)

@@ -8,7 +8,7 @@ public protocol DataSource {
     var request: RequestProtocol? { get }
     
     /// reloads the datasource from the network
-    func reload()
+    func reload() throws
 }
 
 extension DataSource {

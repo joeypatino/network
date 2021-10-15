@@ -1,6 +1,6 @@
 /// Encapsulates Http request information. This object is used by the Network Service to inject the
 /// base url into the request.
-public struct HttpServiceRequest: RequestProtocol {
+public class HttpServiceRequest: RequestProtocol {
     public var headers: HttpHeaders
     public var method: HttpMethod { request.method }
     public var url: URL {
@@ -10,13 +10,17 @@ public struct HttpServiceRequest: RequestProtocol {
             base?.path += $0.path
             base?.query = $0.query
         }
+        var items = base?.queryItems ?? [URLQueryItem]()
+        items.append(contentsOf: queryItems)
+        base?.queryItems = items
         return base?.url ?? baseUrl
     }
     public var decoder: DataDecoderProtocol
-    
+    public var queryItems: [URLQueryItem] = []
+
     private let baseUrl: URL
-    private let request: RequestProtocol
-        
+    private let request: RequestProtocol    
+    
     /// Creates a HttpServiceRequest given the HttpEndpoint and base url
     /// - Parameters:
     ///   - request: The HttpEndpoint used to construct the request object

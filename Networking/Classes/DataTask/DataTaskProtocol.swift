@@ -1,11 +1,11 @@
-public protocol DataTaskProtocol: class {
+public protocol DataTaskProtocol: AnyObject {
     var delegate: DataTaskProtocolDelegate? { get set }
     var request: RequestProtocol { get }
     var progress: Progress { get }
     func load()
 }
 
-public protocol DataTaskProtocolDelegate: class {
+public protocol DataTaskProtocolDelegate: AnyObject {
     func dataTask(_ dataTask: DataTaskProtocol, didStartLoading request: RequestProtocol)
     func dataTask(_ dataTask: DataTaskProtocol, didFinishLoading request: RequestProtocol)
     func dataTask(_ dataTask: DataTaskProtocol, requestDidSucceed request: RequestProtocol, withResponse response: ResponseProtocol)

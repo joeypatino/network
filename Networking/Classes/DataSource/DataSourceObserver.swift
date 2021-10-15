@@ -4,7 +4,7 @@ public enum LoadingState {
     case loading
 }
 
-public protocol DataSourceObserver: class {
+public protocol DataSourceObserver: AnyObject {
     // notifies when the loading state changes
     func dataSource(_ dataSource: DataSource, loadingStateChanged state: LoadingState)
 

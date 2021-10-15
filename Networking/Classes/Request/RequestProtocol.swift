@@ -1,8 +1,16 @@
-public protocol RequestProtocol {
+public protocol RequestProtocol: AnyObject {
     var url: URL { get }
     var method: HttpMethod { get }
     var headers: HttpHeaders { get set }
     var decoder: DataDecoderProtocol { get set }
+    var queryItems: [URLQueryItem] { get set }
+}
+
+public extension RequestProtocol {
+    func appendQueryItem(_ query: URLQueryItem) {
+        queryItems.removeAll(where: { $0.name == query.name })
+        queryItems.append(query)
+    }
 }
 
 extension RequestProtocol {

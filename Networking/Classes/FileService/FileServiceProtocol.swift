@@ -59,7 +59,7 @@ public enum FileServiceError: Error {
 }
 
 /// Protocol of object that is capable of managing "remote" files
-public protocol FileServiceProtocol: class {
+public protocol FileServiceProtocol: AnyObject {
     func download(_ file: AnyFile, completion: @escaping LocalFileClosure)
     func upload(_ data: Data, completion: @escaping UploadFileClosure) -> ObjectDataSource<AnyFile>
     func delete<T>(_ file: FileProtocol, completion: @escaping DeleteFileClosure<T>)
