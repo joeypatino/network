@@ -17,16 +17,18 @@ public class HttpRequest: RequestProtocol {
     public let method: HttpMethod
     public let path: String
     public var queryItems: [URLQueryItem] = []
+    public var cachePolicy: URLRequest.CachePolicy
     
     public let baseUrl: URL = URL(string: "http://127.0.0.1")!
     
     
     /// Creates a HttpRequest given the HttpEndpoint
     /// - Parameter endPoint: The HttpEndpoint used to construct the request object
-    public init(endPoint: HttpEndpoint) {
+    public init(endPoint: HttpEndpoint, cachePolicy: URLRequest.CachePolicy = .reloadIgnoringLocalCacheData) {
         self.path = endPoint.path
         self.method = endPoint.method
         self.headers = endPoint.headers
+        self.cachePolicy = cachePolicy
     }
     
     /// Creates a HttpRequest given the RequestProtocol
@@ -36,7 +38,8 @@ public class HttpRequest: RequestProtocol {
         self.method = request.method
         self.headers = request.headers
         self.decoder = request.decoder
-        
+        self.cachePolicy = request.cachePolicy
+
         let base = URLComponents(string: request.url.absoluteString)
         self.queryItems = base?.queryItems ?? [URLQueryItem]()
     }

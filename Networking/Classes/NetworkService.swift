@@ -14,7 +14,9 @@ public final class NetworkService: NSObject, NetworkServiceProtocol {
 
     /// the baseUrl for `Requests` made through this `Service`
     public let baseUrl: URL
-
+    /// the url response cache
+    private let cache = URLCache()
+    
     private lazy var urlSession = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: OperationQueue.main)
     private let sessionConfiguration: URLSessionConfiguration
     private let operationQueue: OperationQueue
@@ -27,6 +29,7 @@ public final class NetworkService: NSObject, NetworkServiceProtocol {
     ///   Otherwise the system may terminate / suspend long running upload / download tasks when the application is suspended or
     ///   terminated.
     public init(baseUrl: URL, allowedInBackground: Bool = true) {
+        self.cache.removeAllCachedResponses()
         self.baseUrl = baseUrl
         self.sessionConfiguration = allowedInBackground
             ? URLSessionConfiguration.background(withIdentifier: Bundle.mainBundleId)
@@ -46,7 +49,23 @@ public final class NetworkService: NSObject, NetworkServiceProtocol {
         let dataTask = DataTask(request: serviceRequest, urlSession: urlSession)
         taskIdentifierToDataTask[dataTask.urlTask.taskIdentifier] = dataTask
         dataTask.taskDelegate = self
+        NetworkService.Log.verbose(#function, serviceRequest.url)
         let dataSource: ObjectDataSource<DataObject> = ObjectDataSource(dataTask: dataTask)
+        dataSource.clearCachedResponseForRequest = { request in
+            self.cache.removeCachedResponse(for: request.urlRequest)
+        }
+        dataSource.cachedResponseForRequest = { request in
+            return nil
+//            switch request.cachePolicy {
+//            case .reloadIgnoringLocalCacheData:
+//                return nil
+//            case .returnCacheDataElseLoad:
+//                fallthrough
+//            default:
+//                guard let response = self.cache.cachedResponse(for: request.urlRequest) else { return nil }
+//                return HttpResponse(data: response.data, statusCode: (response.response as? HTTPURLResponse)?.statusCode ?? 200)
+//            }
+        }
         if immediate { dataSource.reload() }
         return dataSource
     }
@@ -61,7 +80,21 @@ public final class NetworkService: NSObject, NetworkServiceProtocol {
         let serviceRequest = HttpServiceRequest(request, baseUrl: baseUrl)
         let dataTask = DataTask(request: serviceRequest, urlSession: urlSession)
         taskIdentifierToDataTask[dataTask.urlTask.taskIdentifier] = dataTask
+        NetworkService.Log.verbose(#function, serviceRequest.url)
         let dataSource: ArrayDataSource<DataObject> = ArrayDataSource(dataTask: dataTask)
+        dataSource.clearCachedResponseForRequest = { request in
+            self.cache.removeCachedResponse(for: request.urlRequest)
+        }
+        dataSource.cachedResponseForRequest = { request in
+            return nil
+//            switch request.cachePolicy {
+//            case .reloadIgnoringLocalCacheData:
+//                return nil
+//            default:
+//                guard let response = self.cache.cachedResponse(for: request.urlRequest) else { return nil }
+//                return HttpResponse(data: response.data, statusCode: (response.response as? HTTPURLResponse)?.statusCode ?? 200)
+//            }
+        }
         if immediate { dataSource.reload() }
         return dataSource
     }
@@ -89,6 +122,11 @@ public final class NetworkService: NSObject, NetworkServiceProtocol {
 
 extension NetworkService: DataTaskDelegate {
     public func dataTask(_ dataTask: DataTask, didUpdateUrlTask urlTask: URLSessionTask, previousTaskIdentifier: Int) {
+        NetworkService.Log.info(#function)
+        NetworkService.Log.info("taskIdentifier:", urlTask.taskIdentifier)
+        NetworkService.Log.info("previousTaskIdentifier:", previousTaskIdentifier)
+        NetworkService.Log.info(taskIdentifierToDataTask)
+        NetworkService.Log.info()
         //guard let task = taskIdentifierToDataTask[previousTaskIdentifier] else { return }
         taskIdentifierToDataTask[urlTask.taskIdentifier] = dataTask
     }
@@ -107,7 +145,13 @@ extension NetworkService: URLSessionDelegate {
 
 extension NetworkService: URLSessionDataDelegate {
     public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        NetworkService.Log.verbose(#function)
         task(identifier: dataTask.taskIdentifier)?.urlSession(session, dataTask: dataTask, didReceive: data)
+    }
+    
+    public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, willCacheResponse proposedResponse: CachedURLResponse, completionHandler: @escaping (CachedURLResponse?) -> Void) {
+        dataTask.currentRequest.map { cache.storeCachedResponse(proposedResponse, for: $0) }
+        completionHandler(proposedResponse)
     }
 }
 
@@ -118,22 +162,27 @@ extension NetworkService: URLSessionTaskDelegate {
     }
     
     public func urlSession(_ session: URLSession, taskIsWaitingForConnectivity task: URLSessionTask) {
+        NetworkService.Log.verbose(#function)
         self.task(identifier: task.taskIdentifier)?.urlSession(session, taskIsWaitingForConnectivity: task)
     }
     
     public func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
+        NetworkService.Log.verbose(#function)
         self.task(identifier: task.taskIdentifier)?.urlSession(session, task: task, willPerformHTTPRedirection: response, newRequest: request, completionHandler: completionHandler)
     }
     
     public func urlSession(_ session: URLSession, task: URLSessionTask, needNewBodyStream completionHandler: @escaping (InputStream?) -> Void) {
+        NetworkService.Log.verbose(#function)
         self.task(identifier: task.taskIdentifier)?.urlSession(session, task: task, needNewBodyStream: completionHandler)
     }
         
     public func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
+        NetworkService.Log.verbose(#function)
         self.task(identifier: task.taskIdentifier)?.urlSession(session, task: task, didSendBodyData: bytesSent, totalBytesSent: totalBytesSent, totalBytesExpectedToSend: totalBytesExpectedToSend)
     }
 
     public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        NetworkService.Log.verbose(#function)
         self.task(identifier: task.taskIdentifier)?.urlSession(session, task: task, didCompleteWithError: error)
         taskIdentifierToDataTask.removeValue(forKey: task.taskIdentifier)
     }

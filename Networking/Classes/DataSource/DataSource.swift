@@ -7,6 +7,9 @@ public protocol DataSource {
     /// the request that this datasource loads
     var request: RequestProtocol? { get }
     
+    /// the unique identifier for the datasource instance
+    var uuid: String { get }
+    
     /// reloads the datasource from the network
     func reload() throws
 }

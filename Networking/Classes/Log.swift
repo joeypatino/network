@@ -9,10 +9,14 @@ public protocol LoggingSupport: AnyObject {
     static var Log: Console { get }
     static var verbosity: [Console.Verbosity] { get }
     static var namespace: String { get }
+    static func isVerbositySet(_ verbosityLevel: Console.Verbosity) -> Bool
 }
 
 extension LoggingSupport {
     public static var namespace: String { String(describing: self) }
+    public static func isVerbositySet(_ verbosityLevel: Console.Verbosity) -> Bool {
+        return verbosity.contains(where: { $0 == verbosityLevel })
+    }
 }
 
 extension LoggingSupport {
@@ -54,7 +58,7 @@ public struct Console {
         }
     }
     // global verbosity setting
-    static var verbosity: [Verbosity] = [.info, .warn, .verbose, /*.custom("NETWORK")*/ .custom("FIREBASE")]
+    static var verbosity: [Verbosity] = [.info, .warn, .verbose, .custom("NETWORK"), /*.custom("FIREBASE") */]
     // per instance verbosity setting
     public var verbosity: [Verbosity] = []
     // the namespace for this Console

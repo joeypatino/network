@@ -17,7 +17,8 @@ public class HttpServiceRequest: RequestProtocol {
     }
     public var decoder: DataDecoderProtocol
     public var queryItems: [URLQueryItem] = []
-
+    public var cachePolicy: URLRequest.CachePolicy
+    
     private let baseUrl: URL
     private let request: RequestProtocol    
     
@@ -30,6 +31,7 @@ public class HttpServiceRequest: RequestProtocol {
         self.baseUrl = baseUrl
         self.headers = request.headers
         self.decoder = request.decoder
+        self.cachePolicy = request.cachePolicy
     }
 }
 

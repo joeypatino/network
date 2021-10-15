@@ -4,6 +4,7 @@ public protocol RequestProtocol: AnyObject {
     var headers: HttpHeaders { get set }
     var decoder: DataDecoderProtocol { get set }
     var queryItems: [URLQueryItem] { get set }
+    var cachePolicy: URLRequest.CachePolicy { get set }
 }
 
 public extension RequestProtocol {
